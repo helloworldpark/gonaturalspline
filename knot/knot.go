@@ -10,6 +10,7 @@ import "fmt"
 type Knot interface {
 	Len() int
 	IsSorted() bool
+	IsUnique() bool
 	At(idx int) float64
 	String() string
 }
@@ -36,6 +37,23 @@ func (k UniformKnot) Len() int {
 
 func (k UniformKnot) IsSorted() bool {
 	return sort.Float64sAreSorted(k)
+}
+
+func (k UniformKnot) IsUnique() bool {
+	if !k.IsSorted() {
+		return false
+	}
+	if k.Len() == 0 {
+		return false
+	}
+	last := k[0]
+	for _, f := range k[1:] {
+		if last == f {
+			return false
+		}
+		last = f
+	}
+	return true
 }
 
 func (k UniformKnot) At(idx int) float64 {
