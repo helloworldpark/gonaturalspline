@@ -12,6 +12,7 @@ type Knot interface {
 	IsSorted() bool
 	IsUnique() bool
 	At(idx int) float64
+	Index(x float64) int
 	String() string
 }
 
@@ -28,9 +29,11 @@ func NewUniformKnot(start, end float64, count int) Knot {
 	for i := 0; i < count; i++ {
 		knots = append(knots, (end-start)*(float64(i)/float64(count)))
 	}
+	knots = append(knots, end)
 	return knots
 }
 
+// count + 1
 func (k UniformKnot) Len() int {
 	return len(k)
 }
@@ -64,6 +67,26 @@ func (k UniformKnot) At(idx int) float64 {
 		return k[k.Len()-1]
 	}
 	return k[idx]
+}
+
+func (k UniformKnot) Index(x float64) int {
+	start, end := k[0], k[len(k)-1]
+	interval := (end - start) / float64(len(k)-1)
+	idx := int(x*interval + start)
+	if k.At(idx) <= x && x < k.At(idx+1) {
+		return idx
+	}
+	if x >= k.At(idx+1) {
+		for interval < x-k.At(idx) && idx < len(k) {
+			idx++
+		}
+		return idx
+	}
+
+	for interval > k.At(idx)-x && x > 0 {
+		idx--
+	}
+	return idx
 }
 
 func (k UniformKnot) String() string {

@@ -1,6 +1,9 @@
 package knot
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
 
 func TestUniformKnot(t *testing.T) {
 	knot := NewUniformKnot(0, 10, 100)
@@ -15,4 +18,11 @@ func TestUniformKnot(t *testing.T) {
 		t.Logf("[Knot] Knot[%d] = %f\n", i, knot.At(i))
 	}
 	t.Logf("[Knot] Knot = %v\n", knot)
+}
+
+func TestKnotIndex(t *testing.T) {
+	knots := NewUniformKnot(0, 1, 10)
+	for x := 0.0; x < 2.0; x += 0.05 {
+		fmt.Printf("x[%d]=%f\n", knots.Index(x), x)
+	}
 }
