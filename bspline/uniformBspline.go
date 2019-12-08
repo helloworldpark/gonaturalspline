@@ -14,7 +14,7 @@ type bSplineSimple struct {
 
 func NewBSplineSimple(order int, knot knot.Knot, coef []float64) *bSplineSimple {
 	// TODO:
-	// assert: order >= 1, knot.Len() > 0, knot.Len() + order == len(coef)
+	// assert: order >= 1, knot.Count() > 0, knot.Count() + order == len(coef)
 	bsplines := constructBSplines(order, knot)
 	return &bSplineSimple{
 		knots:    knot,

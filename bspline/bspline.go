@@ -2,7 +2,8 @@ package bspline
 
 import "github.com/helloworldpark/gonaturalspline/knot"
 
-type BSplineGroup interface {
+// BSpline BSpline represents a function that implements B-Spline.
+type BSpline interface {
 	At(x float64) float64
 	AtIdx(idx int) float64
 	Knots() knot.Knot
