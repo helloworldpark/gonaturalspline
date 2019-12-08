@@ -11,8 +11,8 @@ import (
 )
 
 func TestSimpleBSpline(t *testing.T) {
-	knots := knot.NewUniformKnot(0, 1, 10, 4)
 	const order = 3
+	knots := knot.NewUniformKnot(0, 1, 10, order)
 
 	p, err := plot.New()
 	if err != nil {
@@ -22,19 +22,20 @@ func TestSimpleBSpline(t *testing.T) {
 	p.X.Label.Text = "X"
 	p.Y.Label.Text = "Y"
 
-	for i := 0; i < knots.Len(); i++ {
-		coef := make([]float64, knots.Len()+order)
+	for i := 0; i < knots.Count(); i++ {
+		coef := make([]float64, knots.Count()+order)
 		simpleSpline := NewBSplineSimple(order, knots, coef)
-		simpleSpline.SetCoef(i+4, 1.0)
-		fmt.Printf("B[%d]=%f\n", i, simpleSpline.At(knots.At(i+1)))
+		simpleSpline.SetCoef(i+order, 1.0)
+		x := knots.At(i + order)
+		fmt.Printf("B[%d](%f)=%f\n", i, x, simpleSpline.At(x))
 		f := plotter.NewFunction(simpleSpline.At)
 		f.Samples = 1000
 
 		p.Add(f)
 	}
 
-	p.X.Min = -0.5
-	p.X.Max = 1.5
+	p.X.Min = -0.2
+	p.X.Max = 1.2
 	p.Y.Min = 0
 	p.Y.Max = 2
 

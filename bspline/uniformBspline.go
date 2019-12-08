@@ -25,7 +25,7 @@ func NewBSplineSimple(order int, knot knot.Knot, coef []float64) *bSplineSimple 
 }
 
 func (b *bSplineSimple) At(x float64) float64 {
-	idx := b.knots.Index(x)
+	idx := b.knots.Index(x) + b.Order()
 	v := b.GetCoef(idx) * b.GetBSpline(idx)(x)
 	for m := 1; m <= b.order; m++ {
 		v += b.GetCoef(idx-m) * b.GetBSpline(idx-m)(x)
@@ -34,7 +34,12 @@ func (b *bSplineSimple) At(x float64) float64 {
 }
 
 func (b *bSplineSimple) AtIdx(idx int) float64 {
-	return b.bsplines[idx](b.Knots().At(idx))
+	x := b.Knots().At(idx)
+	v := b.GetCoef(idx) * b.GetBSpline(idx)(x)
+	for m := 1; m <= b.order; m++ {
+		v += b.GetCoef(idx-m) * b.GetBSpline(idx-m)(x)
+	}
+	return v
 }
 
 func (b *bSplineSimple) Knots() knot.Knot {
@@ -60,7 +65,19 @@ func (b *bSplineSimple) GetCoef(idx int) float64 {
 	return 0.0
 }
 
+// GetBSpline find cached B-Spline function from index of the knot
+func (b *bSplineSimple) SetBSpline(idx int, fcn bFunc) {
+	idx += b.order
+	if 0 <= idx && idx < len(b.coefs) {
+		b.bsplines[idx] = fcn
+	} else {
+		// TODO: Warn
+	}
+}
+
+// GetBSpline find cached B-Spline function from index of the knot
 func (b *bSplineSimple) GetBSpline(idx int) bFunc {
+	idx += b.order
 	if idx < 0 {
 		return b.bsplines[0]
 	}
@@ -113,7 +130,7 @@ func constructBSplines(order int, knots knot.Knot) []bFunc {
 	}
 	var splines []bFunc
 	// Order 0
-	for idx := 0; idx < knots.Len()+2*order; idx++ {
+	for idx := -order; idx < knots.Count()+order; idx++ {
 		k1, k2 := knots.At(idx), knots.At(idx+1)
 		var fcn bFunc
 		if k1 == k2 {
@@ -126,14 +143,14 @@ func constructBSplines(order int, knots knot.Knot) []bFunc {
 
 	// Order 1~ : Recursive
 	for m := 1; m <= order; m++ {
-		for idx := 0; idx < knots.Len()+2*order-m; idx++ {
+		for idx := -order; idx < knots.Count()+order-m; idx++ {
 			a1, a2 := knots.At(idx), knots.At(idx+m)
 			t1, t2 := knots.At(idx+1), knots.At(idx+m+1)
-			fa, ft := splines[idx], splines[idx+1]
+			fa, ft := splines[idx+order], splines[idx+1+order]
 			fcn := constructBsplinesRecursively(a1, a2, t1, t2, fa, ft)
-			splines[idx] = fcn
+			splines[idx+order] = fcn
 		}
 	}
-	splines = splines[:(knots.Len() + order)]
+	splines = splines[:(knots.Count() + order)]
 	return splines
 }
