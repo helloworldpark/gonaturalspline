@@ -26,3 +26,13 @@ func TestKnotIndex(t *testing.T) {
 		fmt.Printf("x[%d]=%f\n", knots.Index(x), x)
 	}
 }
+
+func TestArbitraryKnot(t *testing.T) {
+	builder := NewArbitraryKnotBuilder()
+	builder = builder.Append(0.0).Append(1.0).Append(1.5).Append(0.1).Append(3.1415)
+	builder = builder.AppendPaddingLeft(-1.0).AppendPaddingLeft(-2.0)
+	builder = builder.AppendPaddingRight(3.15).AppendPaddingRight(3.155)
+	knot := builder.Build()
+
+	fmt.Println(knot)
+}
