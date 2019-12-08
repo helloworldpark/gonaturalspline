@@ -6,7 +6,7 @@ import (
 )
 
 func TestUniformKnot(t *testing.T) {
-	knot := NewUniformKnot(0, 10, 100)
+	knot := NewUniformKnot(0, 10, 100, 4)
 	if !knot.IsSorted() {
 		t.Fatal("[Knot] Knot is not sorted!")
 	}
@@ -21,8 +21,8 @@ func TestUniformKnot(t *testing.T) {
 }
 
 func TestKnotIndex(t *testing.T) {
-	knots := NewUniformKnot(0, 1, 10)
-	for x := 0.0; x < 2.0; x += 0.05 {
+	knots := NewUniformKnot(2, 3, 10, 4)
+	for x := 0.0; x < 2.0; x += 0.00001 {
 		fmt.Printf("x[%d]=%f\n", knots.Index(x), x)
 	}
 }
