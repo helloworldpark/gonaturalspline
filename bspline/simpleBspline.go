@@ -33,15 +33,6 @@ func (b *bSplineSimple) At(x float64) float64 {
 	return v
 }
 
-func (b *bSplineSimple) AtIdx(idx int) float64 {
-	x := b.Knots().At(idx)
-	v := b.GetCoef(idx) * b.GetBSpline(idx)(x)
-	for m := 1; m <= b.order; m++ {
-		v += b.GetCoef(idx-m) * b.GetBSpline(idx-m)(x)
-	}
-	return v
-}
-
 func (b *bSplineSimple) Knots() knot.Knot {
 	return b.knots
 }

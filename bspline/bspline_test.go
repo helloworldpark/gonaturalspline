@@ -12,13 +12,13 @@ import (
 )
 
 func TestSimpleBSpline(t *testing.T) {
-	const order = 3
-	// knots := knot.NewUniformKnot(0, 1, 10, order)
-	builder := knot.NewArbitraryKnotBuilder()
-	builder = builder.Append(0.0).Append(1.0).Append(1.5).Append(0.1).Append(3.1415)
-	builder = builder.AppendPaddingLeft(-1.0).AppendPaddingLeft(-2.0)
-	builder = builder.AppendPaddingRight(3.15).AppendPaddingRight(3.155)
-	knots := builder.Build()
+	const order = 1
+	knots := knot.NewUniformKnot(0, 1, 10, order)
+	// builder := knot.NewArbitraryKnotBuilder()
+	// builder = builder.Append(0.0).Append(1.0).Append(1.5).Append(0.1).Append(3.1415)
+	// builder = builder.AppendPaddingLeft(-1.0).AppendPaddingLeft(-2.0)
+	// builder = builder.AppendPaddingRight(3.15).AppendPaddingRight(3.155)
+	// knots := builder.Build()
 
 	p, err := plot.New()
 	if err != nil {
@@ -30,7 +30,7 @@ func TestSimpleBSpline(t *testing.T) {
 
 	for i := 0; i <= knots.Count(); i++ {
 		coef := make([]float64, knots.Count()+order)
-		simpleSpline := NewBSplineSimple(order, knots, coef).(*bSplineSimple)
+		simpleSpline := NewBSplineSimple(order, knots, coef)
 		simpleSpline.SetCoef(i, 3)
 		x := knots.At(i)
 		fmt.Printf("B[%d](%f)=%f\n", i, x, simpleSpline.At(x))
@@ -41,7 +41,7 @@ func TestSimpleBSpline(t *testing.T) {
 	}
 
 	coef := make([]float64, knots.Count()+order)
-	simpleSpline := NewBSplineSimple(order, knots, coef).(*bSplineSimple)
+	simpleSpline := NewBSplineSimple(order, knots, coef)
 	simpleSpline.SetCoef(0, 1)
 	simpleSpline.SetCoef(1, -1.1)
 	simpleSpline.SetCoef(2, 2.2)
