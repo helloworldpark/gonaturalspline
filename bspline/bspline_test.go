@@ -30,7 +30,7 @@ func TestSimpleBSpline(t *testing.T) {
 
 	for i := 0; i <= knots.Count(); i++ {
 		coef := make([]float64, knots.Count()+order)
-		simpleSpline := NewBSplineSimple(order, knots, coef)
+		simpleSpline := NewBSplineSimple(order, knots, coef).(*bSplineSimple)
 		simpleSpline.SetCoef(i, 3)
 		x := knots.At(i)
 		fmt.Printf("B[%d](%f)=%f\n", i, x, simpleSpline.At(x))
@@ -41,7 +41,7 @@ func TestSimpleBSpline(t *testing.T) {
 	}
 
 	coef := make([]float64, knots.Count()+order)
-	simpleSpline := NewBSplineSimple(order, knots, coef)
+	simpleSpline := NewBSplineSimple(order, knots, coef).(*bSplineSimple)
 	simpleSpline.SetCoef(0, 1)
 	simpleSpline.SetCoef(1, -1.1)
 	simpleSpline.SetCoef(2, 2.2)
