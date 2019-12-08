@@ -25,6 +25,7 @@ func NewUniformKnot(start, end float64, count, paddings int) Knot {
 	for i := startIdx; i <= endIdx; i++ {
 		knots.knots = append(knots.knots, start+(end-start)*(float64(i)/float64(count)))
 	}
+	knots.padding = paddings
 	return &knots
 }
 
@@ -99,7 +100,7 @@ func (k *uniformKnot) Index(x float64) int {
 
 func (k *uniformKnot) String() string {
 	buf := strings.Builder{}
-	buf.WriteString("[")
+	buf.WriteString(fmt.Sprintf("UniformKnot(Count: %d, Padding: %d)[", k.Count(), k.Padding()))
 	for i, f := range k.knots {
 		buf.WriteString(fmt.Sprintf("%f", f))
 		if i < k.Len()-1 {
