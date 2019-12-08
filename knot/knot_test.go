@@ -34,5 +34,5 @@ func TestArbitraryKnot(t *testing.T) {
 	builder = builder.AppendPaddingRight(3.15).AppendPaddingRight(3.155)
 	knot := builder.Build()
 
-	fmt.Println(knot)
+	fmt.Println(knot, knot.Padding())
 }
