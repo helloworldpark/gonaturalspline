@@ -13,16 +13,14 @@ type arbitraryKnot struct {
 
 type ArbitraryKnotBuilder struct {
 	knots        map[float64]bool
-	paddingLeft  map[float64]bool
-	paddingRight map[float64]bool
+	paddingCount int
 }
 
 // NewArbitraryKnotBuilder Create an arbitrary knot with this
-func NewArbitraryKnotBuilder(knots ...float64) *ArbitraryKnotBuilder {
+func NewArbitraryKnotBuilder(paddingCount int, knots ...float64) *ArbitraryKnotBuilder {
 	builder := &ArbitraryKnotBuilder{
 		knots:        make(map[float64]bool),
-		paddingLeft:  make(map[float64]bool),
-		paddingRight: make(map[float64]bool),
+		paddingCount: paddingCount,
 	}
 	for _, f := range knots {
 		builder.knots[f] = true
@@ -35,16 +33,6 @@ func (b *ArbitraryKnotBuilder) Append(f float64) *ArbitraryKnotBuilder {
 	return b
 }
 
-func (b *ArbitraryKnotBuilder) AppendPaddingLeft(f float64) *ArbitraryKnotBuilder {
-	b.paddingLeft[f] = true
-	return b
-}
-
-func (b *ArbitraryKnotBuilder) AppendPaddingRight(f float64) *ArbitraryKnotBuilder {
-	b.paddingRight[f] = true
-	return b
-}
-
 func (b *ArbitraryKnotBuilder) Build() Knot {
 	var knots []float64
 	for k := range b.knots {
@@ -52,68 +40,22 @@ func (b *ArbitraryKnotBuilder) Build() Knot {
 	}
 	sort.Float64s(knots)
 
-	var left []float64
-	for k := range b.paddingLeft {
-		left = append(left, k)
-	}
-	sort.Float64s(left)
-
-	var right []float64
-	for k := range b.paddingRight {
-		right = append(right, k)
-	}
-	sort.Float64s(right)
-
 	// Knot Check
 	if len(knots) <= 1 {
 		panic("[Knot] No knots were given")
 	}
 
-	// Padding Left check
-	if len(left) > 0 && left[len(left)-1] >= knots[0] {
-		panic("[Knot] Left padding must be strictly smaller than the main knot")
+	var totalKnots []float64
+	for i := 0; i < b.paddingCount; i++ {
+		totalKnots = append(totalKnots, knots[0])
 	}
-
-	// Padding Right Check
-	if len(right) > 0 && right[0] <= knots[len(knots)-1] {
-		panic("[Knot] Right padding must be strictly bigger than the main knot")
-	}
-
-	paddingDiff := len(left) - len(right)
-	paddingCount := len(left)
-	if paddingDiff < 0 {
-		paddingCount = len(right)
-
-		var start = knots[0] - (knots[1] - knots[0])
-		if len(left) > 0 {
-			start = left[len(left)-1]
-		}
-		end := knots[0]
-
-		interval := (end - start) / float64(-paddingDiff+2)
-		for i := 1; i <= -paddingDiff; i++ {
-			left = append(left, start+interval*float64(i))
-		}
-	} else if paddingDiff > 0 {
-		paddingCount = len(left)
-
-		start := knots[len(knots)-1]
-		var end = start + (knots[len(knots)-1] - knots[len(knots)-2])
-		if len(right) > 0 {
-			end = right[0]
-		}
-
-		interval := (end - start) / float64(paddingDiff+2)
-		for i := 1; i <= paddingDiff; i++ {
-			right = append(right, start+interval*float64(i))
-		}
-	}
-	var totalKnots = left
 	totalKnots = append(totalKnots, knots...)
-	totalKnots = append(totalKnots, right...)
+	for i := 0; i < b.paddingCount; i++ {
+		totalKnots = append(totalKnots, knots[len(knots)-1])
+	}
 	return &arbitraryKnot{
 		knots:   totalKnots,
-		padding: paddingCount,
+		padding: b.paddingCount,
 	}
 }
 

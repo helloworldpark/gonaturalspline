@@ -20,10 +20,14 @@ func NewUniformKnot(start, end float64, count, paddings int) Knot {
 		return nil
 	}
 	var knots uniformKnot
-	var startIdx = -paddings
-	var endIdx = count + paddings
-	for i := startIdx; i <= endIdx; i++ {
+	for i := 0; i <= paddings; i++ {
+		knots.knots = append(knots.knots, start)
+	}
+	for i := 0; i < count; i++ {
 		knots.knots = append(knots.knots, start+(end-start)*(float64(i)/float64(count)))
+	}
+	for i := 0; i <= paddings; i++ {
+		knots.knots = append(knots.knots, end)
 	}
 	knots.padding = paddings
 	return &knots
@@ -63,13 +67,14 @@ func (k *uniformKnot) IsUnique() bool {
 }
 
 func (k *uniformKnot) At(idx int) float64 {
-	if idx+k.Padding() < 0 {
+	idx += k.Padding()
+	if idx < 0 {
 		return k.knots[0]
 	}
-	if idx >= k.Count()+k.Padding() {
+	if idx >= k.Len() {
 		return k.knots[k.Len()-1]
 	}
-	return k.knots[idx+k.Padding()]
+	return k.knots[idx]
 }
 
 func (k *uniformKnot) Index(x float64) int {
