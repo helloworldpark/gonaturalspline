@@ -28,10 +28,8 @@ func TestKnotIndex(t *testing.T) {
 }
 
 func TestArbitraryKnot(t *testing.T) {
-	builder := NewArbitraryKnotBuilder()
+	builder := NewArbitraryKnotBuilder(3)
 	builder = builder.Append(0.0).Append(1.0).Append(1.5).Append(0.1).Append(3.1415)
-	builder = builder.AppendPaddingLeft(-1.0).AppendPaddingLeft(-2.0)
-	builder = builder.AppendPaddingRight(3.15).AppendPaddingRight(3.155)
 	knot := builder.Build()
 
 	fmt.Println(knot, knot.Padding())

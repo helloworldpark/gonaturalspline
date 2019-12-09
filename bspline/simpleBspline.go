@@ -25,9 +25,9 @@ func NewBSplineSimple(order int, knot knot.Knot, coef []float64) BSpline {
 }
 
 func (b *bSplineSimple) At(x float64) float64 {
-	idx := b.knots.Index(x) + b.Order()
-	v := b.GetCoef(idx) * b.GetBSpline(idx)(x)
-	for m := 1; m <= b.order; m++ {
+	idx := b.knots.Index(x)
+	var v float64
+	for m := -b.order; m <= b.order; m++ {
 		v += b.GetCoef(idx-m) * b.GetBSpline(idx-m)(x)
 	}
 	return v
@@ -50,20 +50,14 @@ func (b *bSplineSimple) SetCoef(idx int, v float64) {
 }
 
 func (b *bSplineSimple) GetCoef(idx int) float64 {
-	if 0 <= idx && idx < len(b.coefs) {
-		return b.coefs[idx]
-	}
-	return 0.0
-}
-
-// GetBSpline find cached B-Spline function from index of the knot
-func (b *bSplineSimple) SetBSpline(idx int, fcn bFunc) {
 	idx += b.order
-	if 0 <= idx && idx < len(b.coefs) {
-		b.bsplines[idx] = fcn
-	} else {
-		// TODO: Warn
+	if idx < 0 {
+		return 0.0
 	}
+	if idx >= len(b.coefs) {
+		return 0.0
+	}
+	return b.coefs[idx]
 }
 
 // GetBSpline find cached B-Spline function from index of the knot
@@ -134,14 +128,20 @@ func constructBSplines(order int, knots knot.Knot) []bFunc {
 
 	// Order 1~ : Recursive
 	for m := 1; m <= order; m++ {
-		for idx := -order; idx < knots.Count()+order-m; idx++ {
+		for idx := -order; idx < knots.Count()+order; idx++ {
 			a1, a2 := knots.At(idx), knots.At(idx+m)
 			t1, t2 := knots.At(idx+1), knots.At(idx+m+1)
-			fa, ft := splines[idx+order], splines[idx+1+order]
+			fa := splines[idx+order]
+			var ft bFunc
+			if idx+1+order >= knots.Count()+order {
+				ft = constructZeroFunction()
+			} else {
+				ft = splines[idx+1+order]
+			}
+
 			fcn := constructBsplinesRecursively(a1, a2, t1, t2, fa, ft)
 			splines[idx+order] = fcn
 		}
 	}
-	splines = splines[:(knots.Count() + order)]
 	return splines
 }

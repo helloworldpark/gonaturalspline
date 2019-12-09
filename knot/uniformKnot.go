@@ -20,13 +20,13 @@ func NewUniformKnot(start, end float64, count, paddings int) Knot {
 		return nil
 	}
 	var knots uniformKnot
-	for i := 0; i <= paddings; i++ {
+	for i := 0; i < paddings; i++ {
 		knots.knots = append(knots.knots, start)
 	}
 	for i := 0; i < count; i++ {
-		knots.knots = append(knots.knots, start+(end-start)*(float64(i)/float64(count)))
+		knots.knots = append(knots.knots, start+(end-start)*(float64(i)/float64(count-1)))
 	}
-	for i := 0; i <= paddings; i++ {
+	for i := 0; i < paddings; i++ {
 		knots.knots = append(knots.knots, end)
 	}
 	knots.padding = paddings
@@ -78,29 +78,15 @@ func (k *uniformKnot) At(idx int) float64 {
 }
 
 func (k *uniformKnot) Index(x float64) int {
-	start, end := k.knots[0], k.knots[len(k.knots)-1]
-	interval := float64(len(k.knots)-1) / (end - start)
-	idx := int(x*interval + start)
-	if k.At(idx) <= x && x < k.At(idx+1) {
-		return idx - k.Padding()
+	idx := sort.Search(len(k.knots), func(i int) bool {
+		return k.knots[i] >= x
+	})
+	if idx == 0 {
+		return -k.Padding()
 	}
-	if idx >= k.Len()-1-k.Padding() {
-		return k.Len() - 1 - k.Padding()
-	}
-	if idx < 0 {
-		return k.Padding()
-	}
-	if x >= k.At(idx+1) {
-		for interval < x-k.At(idx) && idx > 0 {
-			idx--
-		}
-		return idx - k.Padding()
-	}
-
-	for interval < k.At(idx)-x {
-		idx++
-	}
-	return idx - k.Padding()
+	// -1: since sort.Search returns smallest idx s.t. k.knots[idx] >= x,
+	//     the knot should be knot_(idx-1) <= x < knot_idx
+	return idx - 1 - k.Padding()
 }
 
 func (k *uniformKnot) String() string {
