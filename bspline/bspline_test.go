@@ -3,6 +3,7 @@ package bspline
 import (
 	"fmt"
 	"image/color"
+	"strconv"
 	"testing"
 
 	"github.com/helloworldpark/gonaturalspline/knot"
@@ -27,6 +28,13 @@ func TestSimpleBSpline(t *testing.T) {
 	}
 	p.Title.Text = fmt.Sprintf("B-Splines of Order-%d", order)
 	p.X.Label.Text = "X"
+	ticks := plot.ConstantTicks{}
+	for i := 0; i < knots.Count(); i++ {
+		v := knots.At(i)
+		l := strconv.FormatFloat(v, 'f', 1, 64)
+		ticks = append(ticks, plot.Tick{Value: v, Label: l})
+	}
+	p.X.Tick.Marker = ticks
 	p.Y.Label.Text = "Y"
 
 	for i := 0; i <= knots.Count(); i++ {
@@ -54,7 +62,7 @@ func TestSimpleBSpline(t *testing.T) {
 
 	p.X.Min = knots.At(-1) - 0.5
 	p.X.Max = knots.At(knots.Count()+1) + 0.5
-	p.Y.Min = -3.5
+	p.Y.Min = -0.5
 	p.Y.Max = 3.5
 
 	// Save the plot to a PNG file.

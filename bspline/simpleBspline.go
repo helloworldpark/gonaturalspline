@@ -27,8 +27,8 @@ func NewBSplineSimple(order int, knot knot.Knot, coef []float64) BSpline {
 func (b *bSplineSimple) At(x float64) float64 {
 	idx := b.knots.Index(x)
 	var v float64
-	for m := -b.order; m <= b.order; m++ {
-		v += b.GetCoef(idx-m) * b.GetBSpline(idx-m)(x)
+	for m := -b.order; m <= 0; m++ {
+		v += b.GetCoef(idx+m) * b.GetBSpline(idx+m)(x)
 	}
 	return v
 }
@@ -128,7 +128,7 @@ func constructBSplines(order int, knots knot.Knot) []bFunc {
 
 	// Order 1~ : Recursive
 	for m := 1; m <= order; m++ {
-		for idx := -order; idx < knots.Count()+order; idx++ {
+		for idx := -order; idx < knots.Count()+order-m; idx++ {
 			a1, a2 := knots.At(idx), knots.At(idx+m)
 			t1, t2 := knots.At(idx+1), knots.At(idx+m+1)
 			fa := splines[idx+order]
@@ -143,5 +143,6 @@ func constructBSplines(order int, knots knot.Knot) []bFunc {
 			splines[idx+order] = fcn
 		}
 	}
+	splines = splines[:knots.Count()+order]
 	return splines
 }

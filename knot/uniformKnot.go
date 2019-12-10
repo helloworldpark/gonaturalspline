@@ -19,15 +19,16 @@ func NewUniformKnot(start, end float64, count, paddings int) Knot {
 	if start >= end {
 		return nil
 	}
+	interval := (end - start) / float64(count-1)
 	var knots uniformKnot
-	for i := 0; i < paddings; i++ {
-		knots.knots = append(knots.knots, start)
+	for i := paddings; i >= 1; i-- {
+		knots.knots = append(knots.knots, start-float64(i)*interval)
 	}
 	for i := 0; i < count; i++ {
-		knots.knots = append(knots.knots, start+(end-start)*(float64(i)/float64(count-1)))
+		knots.knots = append(knots.knots, start+float64(i)*interval)
 	}
-	for i := 0; i < paddings; i++ {
-		knots.knots = append(knots.knots, end)
+	for i := 1; i <= paddings; i++ {
+		knots.knots = append(knots.knots, end+float64(i)*interval)
 	}
 	knots.padding = paddings
 	return &knots

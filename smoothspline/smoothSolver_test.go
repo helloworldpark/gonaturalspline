@@ -11,14 +11,18 @@ import (
 
 func TestSmoothSolveRegressionMatrix(t *testing.T) {
 	const order = 3
-	knots := knot.NewUniformKnot(-10, 0, 10, order)
+	knots := knot.NewUniformKnot(-10, 0, 11, order)
 	fmt.Println(knots, knots.Padding())
 
 	coef := make([]float64, knots.Count()+order)
 	simpleSpline := bspline.NewBSplineSimple(order, knots, coef)
 
-	solver := NewSmoothSolver(simpleSpline)
+	solver := NewSmoothSolver(simpleSpline, 0)
 	solver.calcRegressionMatrix()
-	fmt.Printf("B: %dx%d \n%0.2v\n", solver.bRegressionMat.RawMatrix().Rows, solver.bRegressionMat.RawMatrix().Cols, mat.Formatted(solver.bRegressionMat))
+	solved := solver.RegressionMatrix()
+	fmt.Printf("B: %dx%d \n%0.2v\n", solved.RawMatrix().Rows, solved.RawMatrix().Cols, mat.Formatted(solved))
+	solver.calcCholesky()
+	solved = solver.SolverMatrix()
+	fmt.Printf("B: %dx%d \n%0.2v\n", solved.RawMatrix().Rows, solved.RawMatrix().Cols, mat.Formatted(solved))
 
 }
