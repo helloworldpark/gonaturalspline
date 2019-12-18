@@ -132,17 +132,17 @@ func constructBSplines(order int, knots knot.Knot) []bFunc {
 			a1, a2 := knots.At(idx), knots.At(idx+m)
 			t1, t2 := knots.At(idx+1), knots.At(idx+m+1)
 			fa := splines[idx+order]
-			var ft bFunc
-			if idx+1+order >= knots.Count()+order {
-				ft = constructZeroFunction()
-			} else {
-				ft = splines[idx+1+order]
-			}
-
+			ft := splines[idx+1+order]
 			fcn := constructBsplinesRecursively(a1, a2, t1, t2, fa, ft)
 			splines[idx+order] = fcn
 		}
 	}
 	splines = splines[:knots.Count()+order]
 	return splines
+}
+
+type bSplineFunc interface {
+}
+
+type bSplineOrder struct {
 }

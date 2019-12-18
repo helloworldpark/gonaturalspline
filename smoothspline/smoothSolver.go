@@ -23,13 +23,13 @@ func NewSmoothSolver(spline bspline.BSpline, lambda float64) *SmoothSolver {
 }
 
 func (solver *SmoothSolver) calcRegressionMatrix() {
-	order := solver.bSpline.Order()
+	// order := solver.bSpline.Order()
 	N := solver.bSpline.Knots().Count()
 
-	B := mat.NewDense(N, N+order+1, nil)
+	B := mat.NewDense(N, N, nil)
 	for i := 0; i < N; i++ {
 		x := solver.bSpline.Knots().At(i)
-		for j := 0; j < N+order; j++ {
+		for j := 0; j < N; j++ {
 			v := solver.bSpline.GetBSpline(j)(x)
 			B.Set(i, j, v)
 		}
@@ -57,6 +57,13 @@ func (solver *SmoothSolver) calcCholesky() {
 	btbSym := mat.NewSymDense(cols, btb.RawMatrix().Data)
 	r, c := btbSym.Dims()
 	fmt.Printf("BTB: %dx%d \n%0.2v\n", r, c, mat.Formatted(btbSym))
+
+	var eigsym mat.EigenSym
+	ok := eigsym.Factorize(btbSym, true)
+	if !ok {
+		fmt.Println("Eigendecomposition failed")
+	}
+	fmt.Printf("Eigenvalues of A:\n%f\n\n", eigsym.Values(nil))
 
 	var chol mat.Cholesky
 	if ok := chol.Factorize(btbSym); !ok {
