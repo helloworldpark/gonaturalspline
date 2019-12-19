@@ -10,7 +10,7 @@ import (
 )
 
 func TestSmoothSolveRegressionMatrix(t *testing.T) {
-	const order = 4
+	const order = 3
 	knots := knot.NewUniformKnot(-10, 0, 11, order)
 	fmt.Println(knots, knots.Padding())
 

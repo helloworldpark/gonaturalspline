@@ -23,14 +23,14 @@ func NewSmoothSolver(spline bspline.BSpline, lambda float64) *SmoothSolver {
 }
 
 func (solver *SmoothSolver) calcRegressionMatrix() {
-	// order := solver.bSpline.Order()
-	N := solver.bSpline.Knots().Count()
+	order := solver.bSpline.Order()
+	N := solver.bSpline.Knots().Count() / 3
 
-	B := mat.NewDense(N, N, nil)
+	B := mat.NewDense(N, N+order+1, nil)
 	for i := 0; i < N; i++ {
-		x := solver.bSpline.Knots().At(i)
-		for j := 0; j < N; j++ {
-			v := solver.bSpline.GetBSpline(j)(x)
+		x := solver.bSpline.Knots().At(i * 3)
+		for j := 0; j < N+order+1; j++ {
+			v := solver.bSpline.GetBSpline(j).Evaluate(x)
 			B.Set(i, j, v)
 		}
 	}

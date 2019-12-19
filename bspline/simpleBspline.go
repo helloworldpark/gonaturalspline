@@ -4,18 +4,17 @@ import (
 	"github.com/helloworldpark/gonaturalspline/knot"
 )
 
-type bFunc func(float64) float64
 type bSplineSimple struct {
 	knots    knot.Knot
 	order    int
-	bsplines []bFunc
+	bsplines []BSplineFunc
 	coefs    []float64
 }
 
 func NewBSplineSimple(order int, knot knot.Knot, coef []float64) BSpline {
 	// TODO:
 	// assert: order >= 1, knot.Count() > 0, knot.Count() + order == len(coef)
-	bsplines := constructBSplines(order, knot)
+	bsplines := buildBSplines(order, knot)
 	return &bSplineSimple{
 		knots:    knot,
 		order:    order,
@@ -28,7 +27,7 @@ func (b *bSplineSimple) At(x float64) float64 {
 	idx := b.knots.Index(x)
 	var v float64
 	for m := -b.order; m <= 0; m++ {
-		v += b.GetCoef(idx+m) * b.GetBSpline(idx+m)(x)
+		v += b.GetCoef(idx+m) * b.GetBSpline(idx+m).Evaluate(x)
 	}
 	return v
 }
@@ -61,8 +60,8 @@ func (b *bSplineSimple) GetCoef(idx int) float64 {
 }
 
 // GetBSpline find cached B-Spline function from index of the knot
-func (b *bSplineSimple) GetBSpline(idx int) bFunc {
-	idx += b.order
+func (b *bSplineSimple) GetBSpline(idx int) BSplineFunc {
+	// idx += b.order
 	if idx < 0 {
 		return b.bsplines[0]
 	}
@@ -72,58 +71,61 @@ func (b *bSplineSimple) GetBSpline(idx int) bFunc {
 	return b.bsplines[idx]
 }
 
-func constructZeroFunction() bFunc {
-	return func(float64) float64 {
-		return 0
+///////////////////////////////////////
+
+type BSplineFunc interface {
+	Evaluate(float64) float64
+}
+
+type bSplineHaar struct {
+	knots [2]float64
+}
+
+func (b *bSplineHaar) Evaluate(x float64) float64 {
+	if b.knots[0] <= x && x < b.knots[1] {
+		return 1
+	}
+	return 0
+}
+
+type bSplineOrder struct {
+	leftRamp   BSplineFunc
+	rightRamp  BSplineFunc
+	leftKnots  [2]float64 // ti, ti+o
+	rightKnots [2]float64 // ti+1, ti+o+1
+	order      int
+}
+
+func (b *bSplineOrder) Evaluate(x float64) float64 {
+	var y float64
+	if b.leftKnots[0] != b.leftKnots[1] {
+		y += ((x - b.leftKnots[0]) / (b.leftKnots[1] - b.leftKnots[0])) * b.leftRamp.Evaluate(x)
+	}
+	if b.rightKnots[0] != b.rightKnots[1] {
+		y += ((b.rightKnots[1] - x) / (b.rightKnots[1] - b.rightKnots[0])) * b.rightRamp.Evaluate(x)
+	}
+	return y
+}
+
+func newBSplineOrder(t1, t2 float64, t3, t4 float64, order int, lspline, rspline BSplineFunc) *bSplineOrder {
+	return &bSplineOrder{
+		leftRamp:   lspline,
+		rightRamp:  rspline,
+		order:      order,
+		leftKnots:  [2]float64{t1, t2},
+		rightKnots: [2]float64{t3, t4},
 	}
 }
 
-func constructHaarFunction(k1, k2 float64) bFunc {
-	return func(x float64) float64 {
-		if k1 <= x && x < k2 {
-			return 1
-		}
-		return 0
-	}
-}
-
-func constructBsplinesRecursively(a1, a2, t1, t2 float64, fa, ft bFunc) bFunc {
-	if a1 == a2 {
-		if t1 == t2 {
-			return constructZeroFunction()
-		}
-		// No a1a2 coefficient
-		return func(x float64) float64 {
-			return (t2 - x) / (t2 - t1) * ft(x)
-		}
-	} else if t1 == t2 {
-		// No t1t2 coefficient
-		return func(x float64) float64 {
-			return (x - a1) / (a2 - a1) * fa(x)
-		}
-	}
-	// No zero coefficient
-	return func(x float64) float64 {
-		return (x-a1)/(a2-a1)*fa(x) + (t2-x)/(t2-t1)*ft(x)
-	}
-}
-
-// [i]bFunc: {order}-order B-Spline associated with j-th knot B_j^i(x)
-func constructBSplines(order int, knots knot.Knot) []bFunc {
+func buildBSplines(order int, knots knot.Knot) []BSplineFunc {
 	if order < 0 {
 		return nil
 	}
-	var splines []bFunc
+	var splines []BSplineFunc
 	// Order 0
 	for idx := -order; idx < knots.Count()+order; idx++ {
 		k1, k2 := knots.At(idx), knots.At(idx+1)
-		var fcn bFunc
-		if k1 == k2 {
-			fcn = constructZeroFunction()
-		} else {
-			fcn = constructHaarFunction(k1, k2)
-		}
-		splines = append(splines, fcn)
+		splines = append(splines, &bSplineHaar{knots: [2]float64{k1, k2}})
 	}
 
 	// Order 1~ : Recursive
@@ -133,16 +135,10 @@ func constructBSplines(order int, knots knot.Knot) []bFunc {
 			t1, t2 := knots.At(idx+1), knots.At(idx+m+1)
 			fa := splines[idx+order]
 			ft := splines[idx+1+order]
-			fcn := constructBsplinesRecursively(a1, a2, t1, t2, fa, ft)
+			fcn := newBSplineOrder(a1, a2, t1, t2, m, fa, ft)
 			splines[idx+order] = fcn
 		}
 	}
 	splines = splines[:knots.Count()+order]
 	return splines
-}
-
-type bSplineFunc interface {
-}
-
-type bSplineOrder struct {
 }

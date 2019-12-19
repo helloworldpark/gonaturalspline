@@ -9,5 +9,5 @@ type BSpline interface {
 	Order() int
 	SetCoef(idx int, v float64)
 	GetCoef(idx int) float64
-	GetBSpline(idx int) bFunc
+	GetBSpline(idx int) BSplineFunc
 }
