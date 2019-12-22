@@ -5,8 +5,11 @@ import (
 	"gonum.org/v1/gonum/mat"
 )
 
+// CubicSpline Univariate function
 type CubicSpline func(float64) float64
 
+// NaturalCubicSplines Reference from:
+// p.141-156, T. Hastie et. al., The Elements of Statistical Learning
 type NaturalCubicSplines struct {
 	splines []CubicSpline
 	knots   knot.Knot
@@ -16,6 +19,7 @@ type NaturalCubicSplines struct {
 	solverMatrix *mat.Dense
 }
 
+// NewNaturalCubicSplines A new pointer of NaturalCubicSpline struct
 func NewNaturalCubicSplines(knots knot.Knot, coefs []float64) *NaturalCubicSplines {
 	return &NaturalCubicSplines{
 		splines: buildNaturalCubicSplines(knots),
@@ -24,6 +28,7 @@ func NewNaturalCubicSplines(knots knot.Knot, coefs []float64) *NaturalCubicSplin
 	}
 }
 
+// Solve Solve the matrix needed when calculating smoothing spline.
 func (ncs *NaturalCubicSplines) Solve(lambda float64) {
 	ncs.lambda = lambda
 	N := ncs.calcBasisMatrix()
@@ -54,6 +59,7 @@ func (ncs *NaturalCubicSplines) Solve(lambda float64) {
 	ncs.solverMatrix = &all
 }
 
+// Interpolate Calculate the coefficients interpolating y
 func (ncs *NaturalCubicSplines) Interpolate(y []float64) {
 	Y := mat.NewVecDense(len(y), y)
 	var coefs mat.VecDense
@@ -61,6 +67,7 @@ func (ncs *NaturalCubicSplines) Interpolate(y []float64) {
 	ncs.coefs = &coefs
 }
 
+// At Calculate the smoothing spline at x
 func (ncs *NaturalCubicSplines) At(x float64) float64 {
 	var y float64
 	for i := 0; i < len(ncs.splines); i++ {

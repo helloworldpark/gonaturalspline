@@ -17,7 +17,6 @@ func TestNaturalCubicSpline(t *testing.T) {
 	const lambda = 0.001
 	knots := knot.NewUniformKnot(0, 10, 11, order)
 	y := []float64{5, 8, 10, 8.5, 4, 0, -3.7, -5, 3.5, -2, 0}
-	// Y := mat.NewVecDense(len(y), y)
 
 	ncs := NewNaturalCubicSplines(knots, nil)
 	ncs.Solve(lambda)
