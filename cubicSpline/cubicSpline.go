@@ -40,6 +40,34 @@ func (ncs *NaturalCubicSplines) Matrix() *mat.Dense {
 	return m
 }
 
+func (ncs *NaturalCubicSplines) SmoothMatrix() *mat.Dense {
+	n := len(ncs.Splines)
+	p := mat.NewDense(ncs.Knots.Count(), n, nil)
+
+	knotEnd := ncs.Knots.At(ncs.Knots.Count() - 1)
+	knotEndEnd := ncs.Knots.At(ncs.Knots.Count() - 2)
+	for j := 2; j < n; j++ {
+		v := 12.0 * (knotEnd - ncs.Knots.At(j-2))
+		p.Set(j, j, v)
+	}
+	for j := 2; j < n; j++ {
+		knotJ := ncs.Knots.At(j - 2)
+		diffJ := knotEndEnd - knotJ
+		for m := j + 1; m < n; m++ {
+			knotM := ncs.Knots.At(m - 2)
+			diffM := knotEndEnd - knotM
+			v := 12.0*(knotEnd-knotEndEnd) + 6.0*(diffM/diffJ)*(2*knotEndEnd-3*knotM+knotJ)
+			p.Set(j, m, v)
+		}
+	}
+	for j := 2; j < n; j++ {
+		for m := 0; m < j; m++ {
+			p.Set(j, m, p.At(m, j))
+		}
+	}
+	return p
+}
+
 func piecewiseCubic(k float64) CubicSpline {
 	return func(x float64) float64 {
 		if x < k {

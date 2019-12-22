@@ -15,10 +15,13 @@ import (
 
 func TestNaturalCubicSpline(t *testing.T) {
 	const order = 3
-	knots := knot.NewUniformKnot(-10, 0, 11, order)
+	knots := knot.NewUniformKnot(0, 10, 11, order)
 	ncs := NewNaturalCubicSplines(knots)
 	m := ncs.Matrix()
 	r, c := m.Dims()
+
+	sm := ncs.SmoothMatrix()
+	fmt.Printf("Smooth Matrix: %dx%d \n%0.2v\n", r, c, mat.Formatted(sm))
 
 	mtm := mat.NewDense(r, c, nil)
 	mtm.Mul(m.T(), m)
