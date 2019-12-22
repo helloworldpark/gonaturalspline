@@ -8,53 +8,95 @@ import (
 type CubicSpline func(float64) float64
 
 type NaturalCubicSplines struct {
-	Splines []CubicSpline
-	Knots   knot.Knot
+	splines []CubicSpline
+	knots   knot.Knot
+	coefs   *mat.VecDense
+	lambda  float64
+
+	solverMatrix *mat.Dense
 }
 
-func NewNaturalCubicSplines(knots knot.Knot) *NaturalCubicSplines {
+func NewNaturalCubicSplines(knots knot.Knot, coefs []float64) *NaturalCubicSplines {
 	return &NaturalCubicSplines{
-		Splines: buildNaturalCubicSplines(knots),
-		Knots:   knots,
+		splines: buildNaturalCubicSplines(knots),
+		knots:   knots,
+		coefs:   mat.NewVecDense(knots.Count(), coefs),
 	}
 }
 
-func (ncs *NaturalCubicSplines) At(x float64, coefs *mat.VecDense) float64 {
+func (ncs *NaturalCubicSplines) Solve(lambda float64) {
+	ncs.lambda = lambda
+	N := ncs.calcBasisMatrix()
+	S := ncs.calcSmoothMatrix()
+
+	var NtN mat.Dense
+	NtN.Mul(N.T(), N)
+
+	S.Scale(lambda, S)
+
+	n, _ := NtN.Dims()
+
+	NtNSym := mat.NewSymDense(n, NtN.RawMatrix().Data)
+	SSym := mat.NewSymDense(n, S.RawMatrix().Data)
+	NtNSym.AddSym(NtNSym, SSym)
+
+	var chol mat.Cholesky
+	if ok := chol.Factorize(NtNSym); !ok {
+		panic(">>>>>>>>>>")
+	}
+
+	var cholInv mat.SymDense
+	chol.InverseTo(&cholInv)
+
+	var all mat.Dense
+	all.Mul(&cholInv, N.T())
+
+	ncs.solverMatrix = &all
+}
+
+func (ncs *NaturalCubicSplines) Interpolate(y []float64) {
+	Y := mat.NewVecDense(len(y), y)
+	var coefs mat.VecDense
+	coefs.MulVec(ncs.solverMatrix, Y)
+	ncs.coefs = &coefs
+}
+
+func (ncs *NaturalCubicSplines) At(x float64) float64 {
 	var y float64
-	for i := 0; i < len(ncs.Splines); i++ {
-		y += coefs.AtVec(i) * ncs.Splines[i](x)
+	for i := 0; i < len(ncs.splines); i++ {
+		y += ncs.coefs.AtVec(i) * ncs.splines[i](x)
 	}
 	return y
 }
 
-func (ncs *NaturalCubicSplines) Matrix() *mat.Dense {
-	n := len(ncs.Splines)
-	m := mat.NewDense(ncs.Knots.Count(), n, nil)
-	for i := 0; i < ncs.Knots.Count(); i++ {
-		x := ncs.Knots.At(i)
+func (ncs *NaturalCubicSplines) calcBasisMatrix() *mat.Dense {
+	n := len(ncs.splines)
+	m := mat.NewDense(ncs.knots.Count(), n, nil)
+	for i := 0; i < ncs.knots.Count(); i++ {
+		x := ncs.knots.At(i)
 		for j := 0; j < n; j++ {
-			v := ncs.Splines[j](x)
+			v := ncs.splines[j](x)
 			m.Set(i, j, v)
 		}
 	}
 	return m
 }
 
-func (ncs *NaturalCubicSplines) SmoothMatrix() *mat.Dense {
-	n := len(ncs.Splines)
-	p := mat.NewDense(ncs.Knots.Count(), n, nil)
+func (ncs *NaturalCubicSplines) calcSmoothMatrix() *mat.Dense {
+	n := len(ncs.splines)
+	p := mat.NewDense(ncs.knots.Count(), n, nil)
 
-	knotEnd := ncs.Knots.At(ncs.Knots.Count() - 1)
-	knotEndEnd := ncs.Knots.At(ncs.Knots.Count() - 2)
+	knotEnd := ncs.knots.At(ncs.knots.Count() - 1)
+	knotEndEnd := ncs.knots.At(ncs.knots.Count() - 2)
 	for j := 2; j < n; j++ {
-		v := 12.0 * (knotEnd - ncs.Knots.At(j-2))
+		v := 12.0 * (knotEnd - ncs.knots.At(j-2))
 		p.Set(j, j, v)
 	}
 	for j := 2; j < n; j++ {
-		knotJ := ncs.Knots.At(j - 2)
+		knotJ := ncs.knots.At(j - 2)
 		diffJ := knotEndEnd - knotJ
 		for m := j + 1; m < n; m++ {
-			knotM := ncs.Knots.At(m - 2)
+			knotM := ncs.knots.At(m - 2)
 			diffM := knotEndEnd - knotM
 			v := 12.0*(knotEnd-knotEndEnd) + 6.0*(diffM/diffJ)*(2*knotEndEnd-3*knotM+knotJ)
 			p.Set(j, m, v)

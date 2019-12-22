@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/helloworldpark/gonaturalspline/knot"
-	"gonum.org/v1/gonum/mat"
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
 	"gonum.org/v1/plot/vg"
@@ -15,49 +14,26 @@ import (
 
 func TestNaturalCubicSpline(t *testing.T) {
 	const order = 3
+	const lambda = 0.001
 	knots := knot.NewUniformKnot(0, 10, 11, order)
-	ncs := NewNaturalCubicSplines(knots)
-	m := ncs.Matrix()
-	r, c := m.Dims()
+	y := []float64{5, 8, 10, 8.5, 4, 0, -3.7, -5, 3.5, -2, 0}
+	// Y := mat.NewVecDense(len(y), y)
 
-	sm := ncs.SmoothMatrix()
-	fmt.Printf("Smooth Matrix: %dx%d \n%0.2v\n", r, c, mat.Formatted(sm))
+	ncs := NewNaturalCubicSplines(knots, nil)
+	ncs.Solve(lambda)
+	ncs.Interpolate(y)
 
-	mtm := mat.NewDense(r, c, nil)
-	mtm.Mul(m.T(), m)
-
-	mtmSym := mat.NewSymDense(r, mtm.RawMatrix().Data)
-	fmt.Printf("MTM: %dx%d \n%0.2v\n", r, c, mat.Formatted(mtmSym))
-
-	var chol mat.Cholesky
-	if ok := chol.Factorize(mtmSym); !ok {
-		panic(">>>>>>>>>>")
-	}
-
-	Y := mat.NewVecDense(r, []float64{5, 8, 10, 8.5, 4, 0, -3.7, -5, -3.5, -2, 0})
-	// Using Solve function
-	var rhs mat.VecDense
-	rhs.MulVec(m.T(), Y)
-	var coef mat.VecDense
-	if err := chol.SolveVecTo(&coef, &rhs); err != nil {
-		panic(fmt.Sprintf("Matrix near singular: %+v\n", err))
-	}
-	fmt.Println("Solve L * LT * x = NT * b")
-	var recoveredY mat.VecDense
-	recoveredY.MulVec(&chol, &coef)
-	fmt.Printf("x = %0.4v\nb = %0.4v\n", mat.Formatted(&coef, mat.Prefix("    ")), mat.Formatted(&recoveredY, mat.Prefix("    ")))
-
-	// Using matrix multiplication
-	var cholInv mat.SymDense
-	chol.InverseTo(&cholInv)
-	var all mat.Dense
-	all.Mul(&cholInv, m.T())
-	var coef2 mat.VecDense
-	coef2.MulVec(&all, Y)
-
-	fmt.Println("Solve x = (L * LT) ^ (-1) * NT * b")
-	fmt.Printf("x = %0.4v\n", mat.Formatted(&coef2, mat.Prefix("    ")))
-	fmt.Printf("Is two methods equal: %+v\n", mat.EqualApprox(&coef, &coef2, 1.e-9))
+	// // Using Solve function
+	// var rhs mat.VecDense
+	// rhs.MulVec(m.T(), Y)
+	// var coef mat.VecDense
+	// if err := chol.SolveVecTo(&coef, &rhs); err != nil {
+	// 	panic(fmt.Sprintf("Matrix near singular: %+v\n", err))
+	// }
+	// fmt.Println("Solve L * LT * x = NT * b")
+	// var recoveredY mat.VecDense
+	// recoveredY.MulVec(&chol, &coef)
+	// fmt.Printf("x = %0.4v\nb = %0.4v\n", mat.Formatted(&coef, mat.Prefix("    ")), mat.Formatted(&recoveredY, mat.Prefix("    ")))
 
 	p, err := plot.New()
 	if err != nil {
@@ -74,18 +50,15 @@ func TestNaturalCubicSpline(t *testing.T) {
 	p.X.Tick.Marker = ticks
 	p.Y.Label.Text = "Y"
 
-	coefFunc := func(x float64) float64 {
-		return ncs.At(x, &coef)
-	}
-	f := plotter.NewFunction(coefFunc)
+	f := plotter.NewFunction(ncs.At)
 	f.Samples = 1000
 	f.Color = color.RGBA{R: 255, G: 0, B: 0, A: 255}
 
 	p.Add(f)
 
 	data := plotter.XYs{}
-	for i := 0; i < Y.Len(); i++ {
-		data = append(data, plotter.XY{X: knots.At(i), Y: Y.AtVec(i)})
+	for i := 0; i < len(y); i++ {
+		data = append(data, plotter.XY{X: knots.At(i), Y: y[i]})
 	}
 
 	scatter, err := plotter.NewScatter(data)
